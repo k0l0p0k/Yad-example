@@ -1,0 +1,38 @@
+#!/bin/sh
+# k0l0p0k 190509
+# вариант hard-list, используется lsblk
+# lsblk -o NAME,SIZE,FSTYPE,LABEL -ln | egrep -v "loop|disk"
+# -o PARTFLAGS - покажет загрузочный нет, если загрузочный выводит 0x80
+# -o MOUNTPOINT понятно без слов
+
+TITLE="разделы"
+TEXT="\nВыберите раздел и нажмите Enter:\n"
+templist=$(mktemp -u --tmpdir templist.XXXXXXXX)
+[ -e "$templist" ] || touch $templist
+
+LISTBLK="$(lsblk -o NAME,TYPE -ln | egrep -v "loop|disk" | cut -d' ' -f 1)" # только разделы
+#echo $LISTBLK; exit # debug
+while read -r list1; do
+fs=`lsblk -o FSTYPE -ln /dev/$list1` # типы фс
+if [ "$fs" = "swap" -o -z "$fs" ] ;then # не показываем swap, и разделы без фс(например расширенные) 
+   continue
+fi 
+#echo $fs;continue
+size=`lsblk -o SIZE -ln /dev/$list1` # размер раздела
+#echo $fs " :: " $size;continue
+boot=`lsblk -o PARTFLAGS -ln /dev/$list1` # 
+if [ "$boot" = "0x80" ] ;then # пометим загрузочный
+   boot="boot"
+else
+   boot=""   
+fi  
+echo "$list1\t$fs  размер  $size  $boot" >> $templist #  разделы, тип фс, размер раздела, метка загрузочного
+done <<< "$LISTBLK"
+cat $templist # debug
+#exit
+#GUI
+hardlist=$(yad --width=500 --center --window-icon="gtk-harddisk" \
+     --name="${0##/}" --title="$TITLE" --text="$TEXT" --image="gtk-harddisk" --entry --rest $templist)
+     
+echo $hardlist #   
+rm $templist    
