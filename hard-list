@@ -1,0 +1,24 @@
+#!/bin/sh
+
+TITLE="разделы"
+TEXT="\nВыберите раздел и нажмите Enter:\n"
+templist=$(mktemp -u --tmpdir templist.XXXXXXXX)
+[ -e "$templist" ] || touch $templist
+
+LISTBLK="$(sudo blkid /dev/sd??|sed 's/: .*TYPE=/ /')" # начиная от типа фс до конца 
+LISTBLK1="$(echo "$LISTBLK" |cut -d' ' -f 1)" # разделы
+while read -r list1; do
+#echo "$list1\t-" >> $templist #  разделы
+list2=`echo "$LISTBLK" | grep "$list1" | cut -d' ' -f 2` # типы фс
+[ `echo $list2 | grep swap` ] && continue # не показываем swap
+size2=$(df -h "$list1" | grep "$list1" | sed 's/\ \{1,\}/:/g' | cut -d':' -f 4) # свободно на разделе
+echo "$list1\t$list2\tсвободно $size2" >> $templist #  разделы, тип фс, свободное место
+done <<< "$LISTBLK1"
+cat $templist # debug
+#GUI
+hardlist=$(yad --width=500 --center --window-icon="gtk-harddisk" \
+     --name="${0##/}" --title="$TITLE" --text="$TEXT" --image="gtk-harddisk" --entry --rest $templist)
+     
+    
+rm $templist    
+
