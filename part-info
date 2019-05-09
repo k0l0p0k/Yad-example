@@ -1,0 +1,38 @@
+#!/bin/sh
+#k0l0p0k 190504
+# отображает информацию о разделах
+# sudo в 10й строчке, для blkid, позже можно убрать
+
+export fpipe=$(mktemp -u --tmpdir info0.XXXXXXXX)
+mkfifo "$fpipe"
+exec 3<> $fpipe
+
+LISTBLK="$(sudo blkid /dev/sd??|sed 's/: .*TYPE=/ /')" # начиная от типа фс до конца 
+LISTBLK1="$(echo "$LISTBLK" |cut -d' ' -f 1)" # разделы
+#LISTBLK2="$(sudo blkid /dev/sd??|sed 's/: .*TYPE=/ /'|cut -d' ' -f 2)" # типы ФС
+while read -r list1; do
+echo $list1 >> $fpipe #  разделы
+echo "$LISTBLK" | grep "$list1" | cut -d' ' -f 2  >> $fpipe # типы ФС
+echo " - " >> $fpipe  # смонтирован
+size=$(df -h "$list1" | grep "$list1" | sed 's/\ \{1,\}/:/g' | cut -d':' -f 2)  # размер
+size2=$(df -h "$list1" | grep "$list1" | sed 's/\ \{1,\}/:/g' | cut -d':' -f 4) # свободно на разделе
+if [ -z $size ]; then # бывает пустым, у swap-раздела например, 
+	echo " - "  >> $fpipe  # размер
+	else
+	echo "$size"  >> $fpipe
+fi
+if [ -z $size2 ]; then
+	echo " - "  >> $fpipe  # свободно
+	else
+	echo "$size2"  >> $fpipe
+fi
+#
+done <<< "$LISTBLK1"
+# по двойному клику ничего пока не делает
+# показывать примонтированный раздел в ФМ ?       
+yad --list --text "Double click to open" --text-align=center --width=700 --height=500\
+    --column="раздел" --column="Тип ФС" --column="смонтирован" --column="размер" --column="свободно"\
+    --search-column=1 --expand-column=1 --print-column="1" <&3      
+
+exec 3>&-
+rm $fpipe
