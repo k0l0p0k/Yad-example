@@ -15,7 +15,8 @@ size2=$(df -h "$list1" | grep "$list1" | sed 's/\ \{1,\}/:/g' | cut -d':' -f 4) 
 echo "$list1\t$list2\tсвободно $size2" >> $templist #  разделы, тип фс, свободное место
 done <<< "$LISTBLK1"
 cat $templist # debug
-#GUI
+
+#############   GUI   ######################
 hardlist=$(yad --width=500 --center --window-icon="gtk-harddisk" \
      --name="${0##/}" --title="$TITLE" --text="$TEXT" --image="gtk-harddisk" --entry --rest $templist)
      
