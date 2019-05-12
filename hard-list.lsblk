@@ -1,6 +1,6 @@
 #!/bin/sh
 # k0l0p0k 190509
-# вариант hard-list, используется lsblk
+# вариант hard-list, вместо blkid используется lsblk
 # lsblk -o NAME,SIZE,FSTYPE,LABEL -ln | egrep -v "loop|disk"
 # -o PARTFLAGS - покажет загрузочный нет, если загрузочный выводит 0x80
 # -o MOUNTPOINT понятно без слов
